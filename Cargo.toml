@@ -1,0 +1,15 @@
+[package]
+name = "cargo-public-api-crates"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.69"
+clap = { version = "4.1.6", features = ["derive"] }
+clap-cargo = "0.1"
+glob = "0.3.1"
+indexmap = "1.9.2"
+rustdoc-types = "0.20.0"
+serde = { version = "1.0.152", features = ["derive"] }
+toml = "0.7.2"
+trustfall_rustdoc = "0.8.2"
