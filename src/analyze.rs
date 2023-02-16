@@ -1,15 +1,17 @@
-use std::path::Path;
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use crate::visit::{self, Visitor};
 use anyhow::{bail, Result};
-use indexmap::{IndexMap, IndexSet};
 use rustdoc_types::{Crate, Id, Span};
 use trustfall_rustdoc::VersionedCrate;
 
 pub struct AnalyzeOutput {
     pub krate: Crate,
-    pub crate_id_to_public_item: IndexMap<u32, IndexSet<Id>>,
-    pub id_to_usages: IndexMap<Id, IndexSet<Span>>,
+    pub crate_id_to_public_item: HashMap<u32, HashSet<Id>>,
+    pub id_to_usages: HashMap<Id, HashSet<Span>>,
 }
 
 pub fn run(doc_json_path: &Path, include_std: bool) -> Result<AnalyzeOutput> {
@@ -20,8 +22,8 @@ pub fn run(doc_json_path: &Path, include_std: bool) -> Result<AnalyzeOutput> {
         _ => bail!("unexpected version format"),
     };
 
-    let mut crate_id_to_public_item: IndexMap<u32, IndexSet<Id>> = <_>::default();
-    let mut id_to_usages: IndexMap<Id, IndexSet<Span>> = <_>::default();
+    let mut crate_id_to_public_item: HashMap<u32, HashSet<Id>> = <_>::default();
+    let mut id_to_usages: HashMap<Id, HashSet<Span>> = <_>::default();
 
     for item in krate.index.values() {
         // don't search through items defined in external crates
@@ -62,7 +64,7 @@ pub fn run(doc_json_path: &Path, include_std: bool) -> Result<AnalyzeOutput> {
 
 struct ItemVisitor<'a> {
     krate: &'a Crate,
-    crate_id_to_public_item: IndexMap<u32, IndexSet<Id>>,
+    crate_id_to_public_item: HashMap<u32, HashSet<Id>>,
     include_std: bool,
 }
 

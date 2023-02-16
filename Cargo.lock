@@ -137,7 +137,6 @@ dependencies = [
  "clap 4.1.6",
  "clap-cargo",
  "glob",
- "indexmap",
  "rustdoc-types 0.20.0",
  "serde",
  "toml",

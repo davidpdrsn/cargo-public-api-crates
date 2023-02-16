@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 
 use rustdoc_types::{
-    Constant, DynTrait, FnDecl, Function, FunctionPointer, GenericArg, GenericArgs, GenericBound,
-    GenericParamDef, GenericParamDefKind, Generics, Item, ItemEnum, Path, PolyTrait, Term, Type,
-    TypeBinding, TypeBindingKind, WherePredicate,
+    Constant, DynTrait, Enum, FnDecl, Function, FunctionPointer, GenericArg, GenericArgs,
+    GenericBound, GenericParamDef, GenericParamDefKind, Generics, Impl, Item, ItemEnum, OpaqueTy,
+    Path, PolyTrait, Static, Struct, StructKind, Term, Trait, TraitAlias, Type, TypeBinding,
+    TypeBindingKind, Typedef, Union, WherePredicate,
 };
 
 #[allow(unused_variables)]
@@ -14,29 +15,155 @@ pub trait Visitor {
 
 pub fn visit_item(item: &Item, v: &mut impl Visitor) {
     match &item.inner {
-        // TODO(david): finish this
         ItemEnum::Function(fun) => visit_function(fun, v),
+        ItemEnum::Struct(struct_) => visit_struct(struct_, v),
+        ItemEnum::StructField(field_type) => visit_type(field_type, v),
+        ItemEnum::AssocType {
+            generics,
+            bounds,
+            default,
+        } => {
+            visit_generics(generics, v);
+            for bound in bounds {
+                visit_generic_bound(bound, v);
+            }
+            if let Some(default) = default {
+                visit_type(default, v);
+            }
+        }
+        ItemEnum::AssocConst { type_, default: _ } => {
+            visit_type(type_, v);
+        }
+        ItemEnum::Impl(impl_) => visit_impl(impl_, v),
+        ItemEnum::Typedef(type_def) => visit_type_def(type_def, v),
+        ItemEnum::Union(union_) => visit_union(union_, v),
+        ItemEnum::Enum(enum_) => visit_enum(enum_, v),
+
+        ItemEnum::Trait(trait_) => visit_trait(trait_, v),
+        ItemEnum::TraitAlias(trait_alias) => visit_trait_alias(trait_alias, v),
+        ItemEnum::OpaqueTy(opaque_type) => visit_opaque_type(opaque_type, v),
+        ItemEnum::Constant(constant) => visit_constant(constant, v),
+        ItemEnum::Static(static_) => visit_static(static_, v),
+
+        // ignore these because they don't contain anything of interest
         ItemEnum::Module(_) => {}
-        ItemEnum::ExternCrate { .. } => {}
         ItemEnum::Import(_) => {}
-        ItemEnum::Union(_) => {}
-        ItemEnum::Struct(_) => {}
-        ItemEnum::StructField(_) => {}
-        ItemEnum::Enum(_) => {}
         ItemEnum::Variant(_) => {}
-        ItemEnum::Trait(_) => {}
-        ItemEnum::TraitAlias(_) => {}
-        ItemEnum::Impl(_) => {}
-        ItemEnum::Typedef(_) => {}
-        ItemEnum::OpaqueTy(_) => {}
-        ItemEnum::Constant(_) => {}
-        ItemEnum::Static(_) => {}
+        ItemEnum::ExternCrate { .. } => {}
         ItemEnum::ForeignType => {}
-        ItemEnum::Macro(_) => {}
-        ItemEnum::ProcMacro(_) => {}
         ItemEnum::Primitive(_) => {}
-        ItemEnum::AssocConst { .. } => {}
-        ItemEnum::AssocType { .. } => {}
+        ItemEnum::ProcMacro(_) => {}
+        ItemEnum::Macro(_) => {}
+    }
+}
+
+fn visit_static(static_: &Static, v: &mut impl Visitor) {
+    let Static {
+        type_,
+        mutable: _,
+        expr: _,
+    } = static_;
+    visit_type(type_, v);
+}
+
+fn visit_opaque_type(opaque_type: &OpaqueTy, v: &mut impl Visitor) {
+    let OpaqueTy { bounds, generics } = opaque_type;
+    for bound in bounds {
+        visit_generic_bound(bound, v);
+    }
+    visit_generics(generics, v);
+}
+
+fn visit_trait_alias(trait_alias: &TraitAlias, v: &mut impl Visitor) {
+    let TraitAlias { generics, params } = trait_alias;
+    visit_generics(generics, v);
+    for param in params {
+        visit_generic_bound(param, v);
+    }
+}
+
+fn visit_trait(trait_: &Trait, v: &mut impl Visitor) {
+    let Trait {
+        is_auto: _,
+        is_unsafe: _,
+        items: _,
+        generics,
+        bounds,
+        implementations: _,
+    } = trait_;
+    visit_generics(generics, v);
+    for bound in bounds {
+        visit_generic_bound(bound, v);
+    }
+}
+
+fn visit_enum(enum_: &Enum, v: &mut impl Visitor) {
+    let Enum {
+        generics,
+        variants_stripped: _,
+        variants: _,
+        impls: _,
+    } = enum_;
+    visit_generics(generics, v);
+}
+
+fn visit_union(union: &Union, v: &mut impl Visitor) {
+    let Union {
+        generics,
+        fields_stripped: _,
+        fields: _,
+        impls: _,
+    } = union;
+    visit_generics(generics, v);
+}
+
+fn visit_impl(impl_: &Impl, v: &mut impl Visitor) {
+    let Impl {
+        is_unsafe: _,
+        generics,
+        provided_trait_methods: _,
+        trait_,
+        for_,
+        items: _,
+        negative: _,
+        synthetic: _,
+        blanket_impl,
+    } = impl_;
+    // blanket impls in other crates that happen to match one of our types shouldn't count
+    if blanket_impl.is_some() {
+        return;
+    }
+    visit_generics(generics, v);
+    if let Some(trait_) = trait_ {
+        visit_path(trait_, v);
+    }
+    visit_type(for_, v);
+}
+
+fn visit_type_def(type_def: &Typedef, v: &mut impl Visitor) {
+    let Typedef { type_, generics } = type_def;
+    visit_type(type_, v);
+    visit_generics(generics, v);
+}
+
+fn visit_struct(struct_: &Struct, v: &mut impl Visitor) {
+    let Struct {
+        kind,
+        generics,
+        impls: _,
+    } = struct_;
+    visit_struct_kind(kind, v);
+    visit_generics(generics, v);
+}
+
+fn visit_struct_kind(kind: &StructKind, _v: &mut impl Visitor) {
+    match kind {
+        StructKind::Unit => {}
+        StructKind::Tuple(_) => {}
+        StructKind::Plain {
+            fields: _,
+            fields_stripped: _,
+        } => {}
     }
 }
 
