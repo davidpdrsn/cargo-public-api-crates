@@ -34,7 +34,6 @@ pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Res
         .collect::<Result<BTreeSet<_>>>()?;
 
     let mut in_api_but_not_allowed = Vec::new();
-    let mut allowed_but_not_in_api = Vec::new();
 
     for krate in &crates_in_public_api {
         if !allowed.contains(krate) {
@@ -42,13 +41,7 @@ pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Res
         }
     }
 
-    for krate in &allowed {
-        if !crates_in_public_api.contains(krate) {
-            allowed_but_not_in_api.push(krate);
-        }
-    }
-
-    let status = if in_api_but_not_allowed.is_empty() && allowed_but_not_in_api.is_empty() {
+    let status = if in_api_but_not_allowed.is_empty() {
         0
     } else {
         1
@@ -59,13 +52,6 @@ pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Res
     if !in_api_but_not_allowed.is_empty() {
         println!("Crates in public API that weren't allowed:");
         for krate in in_api_but_not_allowed {
-            writeln!(&mut stdout, "    {krate}")?;
-        }
-    }
-
-    if !allowed_but_not_in_api.is_empty() {
-        println!("Crates that were allowed but not in public API:");
-        for krate in allowed_but_not_in_api {
             writeln!(&mut stdout, "    {krate}")?;
         }
     }
