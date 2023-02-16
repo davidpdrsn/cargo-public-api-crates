@@ -1,11 +1,12 @@
 use anyhow::{ensure, Context, Result};
 use glob::glob;
+use serde::Deserialize;
 use std::{path::PathBuf, process::Command};
 
 use crate::find_and_parse_cargo_toml;
 
 pub fn run(manifest_path: Option<PathBuf>, skip_build: bool) -> Result<PathBuf> {
-    let (manifest_path, toml) = find_and_parse_cargo_toml(manifest_path)?;
+    let (manifest_path, toml) = find_and_parse_cargo_toml::<CargoToml>(manifest_path)?;
     let package = toml.package.name.replace('-', "_");
 
     if !skip_build {
@@ -26,4 +27,14 @@ pub fn run(manifest_path: Option<PathBuf>, skip_build: bool) -> Result<PathBuf> 
         .with_context(|| format!("{package}.json file not found in target directory"))?;
 
     Ok(doc_json_path)
+}
+
+#[derive(Deserialize, Debug)]
+struct CargoToml {
+    package: Package,
+}
+
+#[derive(Deserialize, Debug)]
+struct Package {
+    name: String,
 }

@@ -2,6 +2,7 @@ use std::{collections::BTreeSet, io::Write, path::PathBuf};
 
 use crate::{analyze::AnalyzeOutput, find_and_parse_cargo_toml};
 use anyhow::{Context, Result};
+use serde::Deserialize;
 
 pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Result<()> {
     let AnalyzeOutput {
@@ -10,7 +11,7 @@ pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Res
         id_to_usages: _,
     } = analyze_output;
 
-    let (_, toml) = find_and_parse_cargo_toml(manifest_path)?;
+    let (_, toml) = find_and_parse_cargo_toml::<CargoToml>(manifest_path)?;
     let allowed = toml
         .package
         .metadata
@@ -70,4 +71,25 @@ pub fn run(manifest_path: Option<PathBuf>, analyze_output: AnalyzeOutput) -> Res
     }
 
     std::process::exit(status)
+}
+
+#[derive(Deserialize, Debug)]
+struct CargoToml {
+    package: Package,
+}
+
+#[derive(Deserialize, Debug)]
+struct Package {
+    metadata: Metadata,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct Metadata {
+    cargo_public_api_crates: CargoPublicApiCratesMeta,
+}
+
+#[derive(Deserialize, Debug)]
+struct CargoPublicApiCratesMeta {
+    allowed: BTreeSet<String>,
 }

@@ -1,8 +1,8 @@
-use std::{collections::BTreeSet, env, path::PathBuf};
+use std::{env, path::PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 mod analyze;
 mod build_docs;
@@ -62,36 +62,17 @@ fn running_as_cargo_cmd() -> bool {
     env::var("CARGO").is_ok() && env::var("CARGO_PKG_NAME").is_err()
 }
 
-fn find_and_parse_cargo_toml(manifest_path: Option<PathBuf>) -> Result<(PathBuf, CargoToml)> {
+fn find_and_parse_cargo_toml<T>(manifest_path: Option<PathBuf>) -> Result<(PathBuf, T)>
+where
+    T: DeserializeOwned,
+{
     let manifest_path = manifest_path.unwrap_or_else(|| PathBuf::from("Cargo.toml"));
 
     let toml = std::fs::read_to_string(&manifest_path)
         .with_context(|| format!("failed to read {}", manifest_path.display()))?;
 
-    let toml = toml::from_str::<CargoToml>(&toml)
+    let toml = toml::from_str(&toml)
         .with_context(|| format!("failed to parse {}", manifest_path.display()))?;
 
     Ok((manifest_path, toml))
-}
-
-#[derive(Deserialize, Debug)]
-struct CargoToml {
-    package: Package,
-}
-
-#[derive(Deserialize, Debug)]
-struct Package {
-    name: String,
-    metadata: Metadata,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-struct Metadata {
-    cargo_public_api_crates: CargoPublicApiCratesMeta,
-}
-
-#[derive(Deserialize, Debug)]
-struct CargoPublicApiCratesMeta {
-    allowed: BTreeSet<String>,
 }
