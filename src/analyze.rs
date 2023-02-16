@@ -4,9 +4,8 @@ use std::{
 };
 
 use crate::visit::{self, Visitor};
-use anyhow::{bail, Result};
+use anyhow::Result;
 use rustdoc_types::{Crate, Id, Span};
-use trustfall_rustdoc::VersionedCrate;
 
 pub struct AnalyzeOutput {
     pub krate: Crate,
@@ -15,12 +14,7 @@ pub struct AnalyzeOutput {
 }
 
 pub fn run(doc_json_path: &Path, include_std: bool) -> Result<AnalyzeOutput> {
-    let krate = trustfall_rustdoc::load_rustdoc(doc_json_path)?;
-
-    let krate = match krate {
-        VersionedCrate::V24(krate) => krate,
-        _ => bail!("unexpected version format"),
-    };
+    let krate = serde_json::from_str::<Crate>(&std::fs::read_to_string(doc_json_path)?)?;
 
     let mut crate_id_to_public_item: HashMap<u32, HashSet<Id>> = <_>::default();
     let mut id_to_usages: HashMap<Id, HashSet<Span>> = <_>::default();
