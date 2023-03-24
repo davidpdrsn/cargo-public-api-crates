@@ -2,15 +2,18 @@
 
 use rustdoc_types::{
     Constant, DynTrait, Enum, FnDecl, Function, FunctionPointer, GenericArg, GenericArgs,
-    GenericBound, GenericParamDef, GenericParamDefKind, Generics, Impl, Item, ItemEnum, OpaqueTy,
-    Path, PolyTrait, Static, Struct, StructKind, Term, Trait, TraitAlias, Type, TypeBinding,
-    TypeBindingKind, Typedef, Union, WherePredicate,
+    GenericBound, GenericParamDef, GenericParamDefKind, Generics, Impl, Import, Item, ItemEnum,
+    OpaqueTy, Path, PolyTrait, Static, Struct, StructKind, Term, Trait, TraitAlias, Type,
+    TypeBinding, TypeBindingKind, Typedef, Union, WherePredicate,
 };
 
 #[allow(unused_variables)]
 pub trait Visitor {
     #[inline]
     fn visit_path(&mut self, path: &Path) {}
+
+    #[inline]
+    fn visit_import(&mut self, import: &Import) {}
 }
 
 pub fn visit_item(item: &Item, v: &mut impl Visitor) {
@@ -44,10 +47,12 @@ pub fn visit_item(item: &Item, v: &mut impl Visitor) {
         ItemEnum::OpaqueTy(opaque_type) => visit_opaque_type(opaque_type, v),
         ItemEnum::Constant(constant) => visit_constant(constant, v),
         ItemEnum::Static(static_) => visit_static(static_, v),
+        ItemEnum::Import(import) => {
+            v.visit_import(import);
+        }
 
         // ignore these because they don't contain anything of interest
         ItemEnum::Module(_) => {}
-        ItemEnum::Import(_) => {}
         ItemEnum::Variant(_) => {}
         ItemEnum::ExternCrate { .. } => {}
         ItemEnum::ForeignType => {}
