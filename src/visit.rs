@@ -396,7 +396,9 @@ fn visit_type(type_: &Type, v: &mut impl Visitor) {
         } => {
             visit_generic_args(args, v);
             visit_type(self_type, v);
-            visit_path(trait_, v);
+            if let Some(trait_) = trait_ {
+                visit_path(trait_, v);
+            }
         }
     }
 }
