@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Unreleased
 
-- **breaking:** Update `rustdoc-types`
+- **breaking:** Update `rustdoc-types`, requires latest nightly.
 
 # 0.1.0 (7. March, 2023)
 
