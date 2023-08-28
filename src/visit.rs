@@ -4,7 +4,7 @@ use rustdoc_types::{
     Constant, DynTrait, Enum, FnDecl, Function, FunctionPointer, GenericArg, GenericArgs,
     GenericBound, GenericParamDef, GenericParamDefKind, Generics, Impl, Import, Item, ItemEnum,
     OpaqueTy, Path, PolyTrait, Static, Struct, StructKind, Term, Trait, TraitAlias, Type,
-    TypeBinding, TypeBindingKind, Typedef, Union, WherePredicate,
+    TypeAlias, TypeBinding, TypeBindingKind, Union, WherePredicate,
 };
 
 #[allow(unused_variables)]
@@ -38,7 +38,7 @@ pub fn visit_item(item: &Item, v: &mut impl Visitor) {
             visit_type(type_, v);
         }
         ItemEnum::Impl(impl_) => visit_impl(impl_, v),
-        ItemEnum::Typedef(type_def) => visit_type_def(type_def, v),
+        ItemEnum::TypeAlias(type_alias) => visit_type_alias(type_alias, v),
         ItemEnum::Union(union_) => visit_union(union_, v),
         ItemEnum::Enum(enum_) => visit_enum(enum_, v),
 
@@ -145,8 +145,8 @@ fn visit_impl(impl_: &Impl, v: &mut impl Visitor) {
     visit_type(for_, v);
 }
 
-fn visit_type_def(type_def: &Typedef, v: &mut impl Visitor) {
-    let Typedef { type_, generics } = type_def;
+fn visit_type_alias(type_alias: &TypeAlias, v: &mut impl Visitor) {
+    let TypeAlias { type_, generics } = type_alias;
     visit_type(type_, v);
     visit_generics(generics, v);
 }
